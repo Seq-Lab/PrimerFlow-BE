@@ -1,0 +1,17 @@
+name: Block PRs to Main except from Develop
+
+on:
+  pull_request:
+    branches:
+      - main  # main 브랜치로 향하는 PR에 대해서만 실행
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        if: github.head_ref != 'develop'  # 들어오는 브랜치(source)가 develop이 아니면
+        run: |
+          echo "Error: You can only merge to 'main' from 'develop'."
+          echo "Please change the base branch to 'develop' or merge your changes to 'develop' first."
+          exit 1  # 강제로 에러(Fail)를 발생시켜 머지를 막음
