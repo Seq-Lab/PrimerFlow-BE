@@ -8,8 +8,9 @@
     ],
     "type-case": [2, "always", "lower-case"],
     "type-empty": [2, "never"],
+    "subject-case": [0],
     "subject-empty": [2, "never"],
-    "subject-max-length": [2, "always", 20],
+    "subject-max-length": [2, "always", 72],
     "subject-full-stop": [2, "never"],
     "body-leading-blank": [2, "always"],
     "scope-empty": [0]
