@@ -56,4 +56,10 @@ uvicorn main:app --reload
 - ReDoc 문서: http://localhost:8000/redoc
 
 
+### 4. Commit convention & commitlint
+
+- 이 레포는 commitlint/husky를 사용합니다. 클론 후 한 번만 실행:
+  - `npm install`
+  - `git config core.hooksPath .husky` (로컬 기기당 1회)
+
 
