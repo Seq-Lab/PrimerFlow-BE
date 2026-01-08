@@ -261,9 +261,9 @@ graph TD
 
     %% Algorithm Branch
     Gen["Candidate Generator<br/>(Sliding Window)"]:::subModule
-    PropFilt["Property filtering"]:::subModule
-    SpecFilt["Specificity filtering"]:::subModule
-    BindFilt["Binding filtering"]:::subModule
+    PropFilt["Property Filtering"]:::subModule
+    SpecFilt["Specificity Filtering"]:::subModule
+    BindFilt["Binding Filtering"]:::subModule
 
     %% Result Branch
     JSON["JSON Serializer"]:::subModule

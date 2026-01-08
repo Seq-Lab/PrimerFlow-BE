@@ -99,7 +99,7 @@ interface PrimerDesignResponse {
 Note: 백엔드는 FastAPI를 사용하며 OpenAPI(/docs)를 제공합니다. 정확한 경로는 개발 착수 시 확정(TBD)됩니다.
 1) 프라이머 설계 요청 (Design Primers)
 - Endpoint: POST /api/design (예상, TBD)
-- Request:서열 데이터 (Sequence String)
+- Request: 서열 데이터 (Sequence String)
 설계 파라미터 (PrimerDesignRequest)
 - Response: PrimerDesignResponse
 - Status Codes & Errors:
