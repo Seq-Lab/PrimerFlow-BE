@@ -97,6 +97,61 @@ CREATE INDEX idx_rsite_loc ON restriction_site(chrom, start, end);
 * **Chromosome Notation**: `exon`, `repeats`, `restriction_site` 테이블은 `'chr1'` 형식을 사용하지만, `snp` 테이블은 숫자 `'1'` 형식을 사용할 수 있습니다. 쿼리 작성 시 이를 고려하여 정규화(Normalization)가 필요할 수 있습니다.
 * **SNP Filtering**: 현재 DB에는 위치 정보만 존재하므로, 해당 위치에 어떤 변이(A->G 등)가 있는지는 알 수 없으나, 프라이머 디자인 관점에서는 **해당 위치를 피한다**는 목적에 충분합니다.
 
+## 5. 설치 및 구축 가이드 (Installation & Setup)
+
+본 데이터베이스는 대용량 원천 데이터를 파싱하여 생성되므로, 아래의 순서에 따라 환경을 조성해야 합니다.
+
+### 5.1. 원천 데이터 수집 (Raw Data Sources)
+
+`database/raw_data/` 폴더를 생성하고, 아래 링크에서 **GRCh38(hg38)** 버전의 파일들을 다운로드합니다.
+
+| 데이터 구분 | 파일명 (파일명 엄수) | 출처 및 포맷 |
+| --- | --- | --- |
+| **Reference Genome** | `GRCh38.primary_assembly.genome.fa` | [GENCODE](https://www.gencodegenes.org/human/) (FASTA) |
+| **Gene/Exon** | `gencode.v44.annotation.gtf.gz` | [GENCODE](https://www.gencodegenes.org/human/) (**GTF3**) |
+| **Clinical SNP** | `clinvar.vcf.gz` | [NCBI ClinVar](https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/) (VCF) |
+| **Repeats** | `rmsk.txt.gz` | [UCSC hg38 Database](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/) (TXT) |
+
+### 5.2. 환경 설정 (Prerequisites)
+
+데이터 파싱 및 유전체 스캔을 위해 아래 라이브러리가 필요합니다.
+
+```bash
+pip install biopython pysam numpy
+```
+
+### 5.3. 데이터베이스 빌드 프로세스 (Build Steps)
+
+1. **데이터 배치**: 다운로드한 모든 파일을 `database/raw_data/` 폴더에 넣습니다.
+2. **빌드 스크립트 실행**:
+```bash
+python scripts/build_db.py
+```
+
+
+> **Note**: 이 과정에서 `GRCh38.fa` 서열을 스캔하여 **제한효소 자리**를 직접 계산하며, GTF3/VCF 파일을 SQLite 테이블로 변환합니다. (약 30분~1시간 소요)
+
+
+3. **정합성 확인**:
+```bash
+python scripts/check_db_detail.py
+```
+
+
+*각 테이블의 레코드 수와 데이터 미리보기가 정상적으로 출력되는지 확인합니다.*
+
+---
+
+## 6. 형상 관리 주의사항 (Git Management)
+
+본 프로젝트는 대용량 생물학 데이터를 포함하고 있으므로, **100MB 초과 파일 업로드 제한**을 준수해야 합니다.
+
+* **추적 제외 대상**: `.db`, `.fa`, `.gz` 및 파생 인덱스 파일(`.fai`, `.tbi`)은 반드시 `.gitignore`에 등록하여 관리합니다.
+* **히스토리 관리**: 만약 대용량 파일이 실수로 커밋되어 푸시 에러(408 Timeout)가 발생할 경우, `git rm -r --cached .` 명령을 통해 인덱스를 초기화한 후 다시 커밋해야 합니다.
+
+---
+
+
 ### 참고 문헌 (References)
 
 1. **Ensembl Genome Browser**: Transcript ID 및 Exon 좌표 원본 데이터.
