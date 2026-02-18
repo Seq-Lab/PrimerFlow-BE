@@ -40,6 +40,9 @@ PrimerFlow-BE/
     ```
 - macOS / Linux
     ```bash
+    # (Ubuntu/WSL) venv 모듈이 없으면 먼저 설치
+    sudo apt update
+    sudo apt install -y python3-venv
     python3 -m venv .venv
     source .venv/bin/activate
     ```
@@ -117,3 +120,11 @@ python -m pytest -q
     - 테스트 케이스 시나리오 초안 완성 (지속적 보완 예정)
 - **AI 활용**
     - 블랙박스 테스트 케이스 설계 : `docs/prompts/4주차/test_design_prompt.md` 참고
+
+### Week 8 (26.2.9 - 2.15)
+- **작업 내역** : [8주차 commit](https://github.com/Seq-Lab/PrimerFlow-BE/commit/235451f6e47103919f97dce966bac7b985a1955e)
+    - 기존 루트(`api/, schemas/, algorithms/`)를 `app/` 하위로 이동하고 import 경로를 `app.*`로 정리
+    - GitHub Actions CI 파이프라인 및 Ruff/Pyright 설정(`pyproject.toml`) 추가
+    - `/health` 엔드포인트에 대한 기본 테스트 추가 및 실행 가이드 업데이트
+- **AI 활용**
+    - CI 파이프라인 구축 도움 : `docs/prompts/8주차/ci_pipeline_setup.md` 참고
