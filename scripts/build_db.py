@@ -20,6 +20,10 @@ ENZYMES = {
 }
 
 def get_db_connection():
+    # DB 파일이 위치할 디렉터리가 없으면 생성하여 연결 오류를 방지
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     return sqlite3.connect(DB_PATH)
 
 def init_schema(conn):
