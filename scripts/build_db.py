@@ -108,7 +108,11 @@ def parse_repeats_rmsk(filename):
                 # UCSC rmsk.txt: col 5(chrom), 6(start), 7(end)
                 if len(parts) < 8: continue
                 chrom = parts[5]
-                start = int(parts[6])
+                # UCSC rmsk: genoStart/genoEnd 는 0-based half-open 이므로
+                # DB 에서는 exon/VCF 와 동일한 1-based inclusive 로 통일한다.
+                #   - start: 0-based inclusive → 1-based inclusive 로 변환(+1)
+                #   - end:   0-based exclusive → 1-based inclusive 에서 그대로 사용 가능
+                start = int(parts[6]) + 1
                 end = int(parts[7])
                 data.append((chrom, start, end))
     except Exception as e:
