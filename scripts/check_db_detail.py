@@ -44,17 +44,14 @@ def main():
     print(f"📂 파일 경로: {DB_PATH}")
     
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        # 검사할 테이블 목록
-        tables = ['exon', 'snp', 'repeats', 'restriction_site']
-        
-        for table in tables:
-            check_table(cursor, table)
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
             
-        conn.close()
-        
+            # 검사할 테이블 목록
+            tables = ['exon', 'snp', 'repeats', 'restriction_site']
+            
+            for table in tables:
+                check_table(cursor, table)
     except Exception as e:
         print(f"❌ DB 연결 오류: {e}")
         
