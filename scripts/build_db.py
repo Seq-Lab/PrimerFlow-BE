@@ -47,7 +47,9 @@ def init_schema(conn):
 
 def parse_gff3(filename):
     path = os.path.join(RAW_DATA_DIR, filename)
-    if not os.path.exists(path): return []
+    if not os.path.exists(path):
+        print(f"⚠️ Exon GFF3 파일이 존재하지 않아 파싱을 건너뜁니다: {path}")
+        return []
     print(f"📖 Exon 파싱 시작: {filename}")
     data = []
     open_func = gzip.open if filename.endswith('.gz') else open
