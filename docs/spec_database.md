@@ -116,6 +116,24 @@ CREATE INDEX idx_res ON restriction_site(chrom, start);
 | **Clinical SNP** | `clinvar.vcf.gz` | [NCBI ClinVar](https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/) (VCF) |
 | **Repeats** | `rmsk.txt.gz` | [UCSC hg38 Database](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/) (TXT) |
 
+#### 설치법
+- **Reference Genome**
+    1. 출처 링크에 접속한 뒤, **Fasta files** 섹션 찾기
+    2. `Content`가 **Genome sequence, primary assembly (GRCh38)** 인 행 찾기
+    3. 옆에 있는 `Download` 열에서 Fasta 클릭 후 `GRCh38.primary_assembly.genome.fa.gz` 설치
+- **Gene/Exon**
+    1. 출처 링크에 접속한 뒤, **GTF/GFF3 files** 섹션 찾기
+    2. `Content`는 **Comprehensive gene annotation**이며, `Regions`는 **CHR**인 행 찾기
+    3. 옆에 있는 `Download` 열에서 **GFF3** 클릭 후 `gencode.v49.annotation.gff3.gz` 설치
+- **Clinical SNP**
+    1. 출처 링크에 접속
+    2. `clinvar.vcf.gz` 찾기
+    3. 클릭 후 `clinvar.vcf.gz` 설치
+- **Repeats**
+    1. 출처 링크에 접속
+    2. `rmsk.txt.gz` 찾기
+    3. 클릭 후 `rmsk.txt.gz` 설치
+
 ### 5.2. 환경 설정 (Prerequisites)
 
 데이터 파싱 및 유전체 스캔을 위해 아래 라이브러리가 필요합니다.
