@@ -122,9 +122,17 @@ python -m pytest -q
     - 블랙박스 테스트 케이스 설계 : `docs/prompts/4주차/test_design_prompt.md` 참고
 
 ### Week 8 (26.2.9 - 2.15)
-- **작업 내역** : [8주차 commit](https://github.com/Seq-Lab/PrimerFlow-BE/commit/235451f6e47103919f97dce966bac7b985a1955e)
+- **작업 내역** : [8주차 Commit](https://github.com/Seq-Lab/PrimerFlow-BE/commit/235451f6e47103919f97dce966bac7b985a1955e)
     - 기존 루트(`api/, schemas/, algorithms/`)를 `app/` 하위로 이동하고 import 경로를 `app.*`로 정리
     - GitHub Actions CI 파이프라인 및 Ruff/Pyright 설정(`pyproject.toml`) 추가
     - `/health` 엔드포인트에 대한 기본 테스트 추가 및 실행 가이드 업데이트
 - **AI 활용**
     - CI 파이프라인 구축 도움 : `docs/prompts/8주차/ci_pipeline_setup.md` 참고
+
+### Week 9 (26.2.16 - 2.22)
+- **작업 내역** : [9주차 Commit](https://github.com/Seq-Lab/PrimerFlow-BE/pull/31#event-22976413812)
+    - 대용량 원천 데이터(GFF3/VCF/rmsk/FASTA)로부터 annotations.db를 생성하는 `scripts/build_db.py` 추가
+    - DB 무결성/건수/샘플 미리보기를 위한 `scripts/check_db_detail.py` 및 기존 알고리즘 연동 확인용 `scripts/test_db_integration.py` 추가
+    - DB 스키마/데이터 소스/설치 절차 문서(`docs/spec_database.md`) 추가
+- **AI 활용**
+    - DB 구축 도움 : `docs/prompts/9주차/DB_setup.md` 참고
