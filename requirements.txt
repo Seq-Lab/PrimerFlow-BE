@@ -1,3 +1,4 @@
 fastapi[standard]
 numpy
 pysam
+pytest

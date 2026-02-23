@@ -31,3 +31,22 @@ yarn-error.log
 pnpm-debug.log
 
 *.log
+
+# --- [ADD] Bioinformatics & Large Data ---
+# 1. Database (700MB+ 파일 차단)
+database/annotations.db
+database/raw_data/
+
+# 2. Genomic Sequences (GB 단위 대용량 파일 차단)
+*.fa
+*.fasta
+*.gz
+
+# 3. Index Files (분석 시 자동 생성되는 부속 파일)
+*.fai
+*.gzi
+*.tbi
+*.idx
+
+# 4. Python Environment (추가 방어)
+venv/
