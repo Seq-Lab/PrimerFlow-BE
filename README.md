@@ -130,7 +130,7 @@ python -m pytest -q
     - CI 파이프라인 구축 도움 : `docs/prompts/8주차/ci_pipeline_setup.md` 참고
 
 ### Week 9 (26.2.16 - 2.22)
-- **작업 내역** : [9주차 Commit](https://github.com/Seq-Lab/PrimerFlow-BE/pull/31#event-22976413812)
+- **작업 내역** : [9주차 Commit](https://github.com/Seq-Lab/PrimerFlow-BE/commit/d1fce29f1c9f054c69f6b34ecf6c6d8299618e2f)
     - 대용량 원천 데이터(GFF3/VCF/rmsk/FASTA)로부터 annotations.db를 생성하는 `scripts/build_db.py` 추가
     - DB 무결성/건수/샘플 미리보기를 위한 `scripts/check_db_detail.py` 및 기존 알고리즘 연동 확인용 `scripts/test_db_integration.py` 추가
     - DB 스키마/데이터 소스/설치 절차 문서(`docs/spec_database.md`) 추가
