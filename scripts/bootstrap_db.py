@@ -1,7 +1,7 @@
 import os
 import sys
-import urllib.request
 import urllib.parse
+import urllib.request
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(CURRENT_DIR)
