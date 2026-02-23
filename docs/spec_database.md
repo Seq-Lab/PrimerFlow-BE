@@ -164,6 +164,21 @@ python scripts/check_db_detail.py
 
 *각 테이블의 레코드 수와 데이터 미리보기가 정상적으로 출력되는지 확인합니다.*
 
+### 5.4. 배포 환경 1회 다운로드 부트스트랩 (Railway 예시)
+
+대용량 DB를 레포에 포함하지 않고, 배포 환경에서 1회 다운로드하도록 설정할 수 있습니다.
+
+1. **DB_URL 환경변수 설정**: Google Drive direct download URL 등 파일 다운로드 링크를 등록합니다.
+2. **Start Command 설정**: 서비스 시작 전에 부트스트랩 스크립트를 먼저 실행합니다.
+
+```bash
+python scripts/bootstrap_db.py; uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+```
+
+> **Note**: `scripts/bootstrap_db.py`는 `DB_URL`을 읽어 `database/annotations.db`가 없을 때만 다운로드합니다.
+
+
 ---
 
 ## 6. 형상 관리 주의사항 (Git Management)
