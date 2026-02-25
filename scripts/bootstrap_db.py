@@ -9,6 +9,7 @@ BASE_DIR = os.path.dirname(CURRENT_DIR)
 DEFAULT_DB_PATH = os.path.join(BASE_DIR, "database", "annotations.db")
 DEFAULT_DB_DIR = os.path.dirname(DEFAULT_DB_PATH)
 DEFAULT_GENOME_PATH = os.path.join(BASE_DIR, "database", "raw_data", "GRCh38.primary_assembly.genome.fa.gz")
+DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 def _env(name, default=None):
     value = os.getenv(name)
@@ -20,36 +21,41 @@ def _ensure_dir(path):
     if path:
         os.makedirs(path, exist_ok=True)
 
+def _download_stream(resp, dest_path):
+    with open(dest_path, "wb") as out_file:
+        while True:
+            chunk = resp.read(DOWNLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            out_file.write(chunk)
+
 def _download_file(url, dest_path):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req) as resp, open(dest_path, "wb") as out_file:
-        out_file.write(resp.read())
+    with urllib.request.urlopen(req) as resp:
+        _download_stream(resp, dest_path)
 
 def _download_google_drive(url, dest_path):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req) as resp:
-        data = resp.read()
         cookies = resp.headers.get_all("Set-Cookie") or []
+        confirm_token = None
+        for cookie in cookies:
+            if "download_warning" in cookie:
+                parts = cookie.split(";")[0].split("=")
+                if len(parts) == 2:
+                    confirm_token = parts[1]
+                    break
 
-    confirm_token = None
-    for cookie in cookies:
-        if "download_warning" in cookie:
-            parts = cookie.split(";")[0].split("=")
-            if len(parts) == 2:
-                confirm_token = parts[1]
-                break
+        if not confirm_token:
+            _download_stream(resp, dest_path)
+            return
 
-    if confirm_token:
-        parsed = urllib.parse.urlparse(url)
-        query = urllib.parse.parse_qs(parsed.query)
-        query["confirm"] = [confirm_token]
-        new_query = urllib.parse.urlencode(query, doseq=True)
-        url = urllib.parse.urlunparse(parsed._replace(query=new_query))
-        _download_file(url, dest_path)
-        return
-
-    with open(dest_path, "wb") as out_file:
-        out_file.write(data)
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+    query["confirm"] = [confirm_token]
+    new_query = urllib.parse.urlencode(query, doseq=True)
+    url = urllib.parse.urlunparse(parsed._replace(query=new_query))
+    _download_file(url, dest_path)
 
 def main():
     db_url = _env("DB_URL")
