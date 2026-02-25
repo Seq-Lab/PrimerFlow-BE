@@ -13,6 +13,8 @@ async def root():
         "message": "PrimerFlow API is running.",
         "docs": "/docs",
         "health": "/health",
+        "database": "/health/db",
+        
     }
 
 # CORS
