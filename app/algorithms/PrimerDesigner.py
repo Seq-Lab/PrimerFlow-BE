@@ -101,8 +101,11 @@ class PrimerDesigner:
                     if not (gc_range[0] <= gc_content <= gc_range[1]):
                         continue
                         
-                    # 3. 3' 말단 안정성 및 GC Clamp
-                    dg3 = sum(NN_PARAMS.get(s[-5:][j : j + 2], (0, 0))[0] for j in range(4))
+                    # 3. 3' 말단 안정성 및 GC Clamp (올바른 깁스 자유에너지 계산으로 수정)
+                    dh3 = sum(NN_PARAMS.get(s[-5:][j : j + 2], (0, 0))[0] for j in range(4))
+                    ds3 = sum(NN_PARAMS.get(s[-5:][j : j + 2], (0, 0))[1] for j in range(4))
+                    dg3 = dh3 - (310.15 * (ds3 / 1000.0)) # 37°C(310.15K) 기준 dG 계산
+                    
                     if dg3 <= -10.0:
                         continue
                     if gc_clamp and s[-1] not in "GC":
@@ -126,26 +129,40 @@ class PrimerDesigner:
     # 좌표 변환 및 매핑 유틸리티 추가
     # ==========================================
     def locate_template_in_genome(self, template_seq: str) -> Optional[Dict]:
-        """Stage 1: 입력된 템플릿 서열의 1-based 게놈 좌표 탐색"""
+        """Stage 1: 입력된 템플릿 서열의 1-based 게놈 좌표 탐색 (메모리 최적화 - 청크 스캔)"""
+        chunk_size = 5_000_000  # 5MB 단위로 쪼개서 로드 (OOM 방지)
+        overlap = len(template_seq) # 청크 경계선에 걸친 서열을 찾기 위한 오버랩
+        
         for ref in self.genome.references:
-            full_seq = self.genome.fetch(ref)
-            pos = full_seq.find(template_seq)
-            if pos != -1:
-                return {
-                    "chrom": ref,
-                    "genomic_start": pos + 1,  # 1-based 변환
-                    "strand": "+",
-                    "template_length": len(template_seq)
-                }
-            rev_seq = reverse_complement(template_seq)
-            pos = full_seq.find(rev_seq)
-            if pos != -1:
-                return {
-                    "chrom": ref,
-                    "genomic_start": pos + 1,  # 1-based 변환
-                    "strand": "-",
-                    "template_length": len(template_seq)
-                }
+            ref_len = self.genome.get_reference_length(ref)
+            
+            for start_idx in range(0, ref_len, chunk_size - overlap):
+                end_idx = min(start_idx + chunk_size, ref_len)
+                
+                try:
+                    # 염색체 전체가 아닌 5MB 구간만 읽어옵니다.
+                    chunk_seq = self.genome.fetch(ref, start_idx, end_idx)
+                except Exception:
+                    continue
+                    
+                pos = chunk_seq.find(template_seq)
+                if pos != -1:
+                    return {
+                        "chrom": ref,
+                        "genomic_start": start_idx + pos + 1,
+                        "strand": "+",
+                        "template_length": len(template_seq)
+                    }
+                
+                rev_seq = reverse_complement(template_seq)
+                pos = chunk_seq.find(rev_seq)
+                if pos != -1:
+                    return {
+                        "chrom": ref,
+                        "genomic_start": start_idx + pos + 1,
+                        "strand": "-",
+                        "template_length": len(template_seq)
+                    }
         return None
 
     def map_to_genomic_coords(self, primer: Dict, template_info: Dict) -> Dict:
@@ -240,13 +257,10 @@ class PrimerDesigner:
         max_hits=50,
         mismatch_cutoff=2,
     ) -> List[Dict]:
-        """
-        Stage 2.3: 게놈 전체 특이성 일괄 검사 (I/O 병목 극적 최적화)
-        기존 specificity_check를 대체하며, 후보군 전체(List)를 받아 염색체 호출을 24회로 최소화합니다.
-        """
+        """Stage 2.3: 게놈 전체 특이성 일괄 검사 (메모리 최적화 - 청크 스캔)"""
         valid_primers = []
 
-        # 1. Mispriming Library (반복 서열) 필터링 - SQLite 쿼리 사전 수행
+        # 1. Mispriming Library (반복 서열) 필터링
         if mispriming_library:
             for p in primers:
                 self.cur.execute(
@@ -258,70 +272,79 @@ class PrimerDesigner:
         else:
             valid_primers = primers.copy()
 
-        # 2. 상태 추적용 딕셔너리 구성
         primer_pool = {p["seq"]: p for p in valid_primers}
         hit_counts = {p["seq"]: 0 for p in valid_primers}
 
-        # 3. 루프 역전: 염색체를 한 번만 불러오고, 메모리 상에서 남은 모든 프라이머 스캔
+        # 5MB 청크 세팅 (오버랩은 프라이머 최대 길이)
+        chunk_size = 5_000_000
+        overlap = max(len(p["seq"]) for p in valid_primers) if valid_primers else 30
+
         for ref in self.genome.references:
             if not primer_pool:
-                break  # 모든 프라이머가 탈락했다면 스캔 즉시 종료
+                break
+            
+            ref_len = self.genome.get_reference_length(ref)
 
-            full_seq = self.genome.fetch(ref)
-
-            for p_seq in list(primer_pool.keys()):
-                for search_seq in [p_seq, reverse_complement(p_seq)]:
-                    pos = full_seq.find(search_seq)
+            # 5MB씩 슬라이딩 스캔
+            for start_idx in range(0, ref_len, chunk_size - overlap):
+                if not primer_pool:
+                    break
                     
-                    while pos != -1:
-                        pos_1based = pos + 1
-                        end_1based = pos + len(search_seq)
+                try:
+                    end_idx = min(start_idx + chunk_size, ref_len)
+                    chunk_seq = self.genome.fetch(ref, start_idx, end_idx)
+                except Exception:
+                    continue
 
-                        # 의도된 타겟 구간 무시
-                        if ref == target_chrom and target_start <= pos_1based <= target_end:
-                            pos = full_seq.find(search_seq, pos + 1)
-                            continue
-
-                        # DB 변이체 필터링 (일치 타겟 발견 시에만)
-                        if splice_variant_handling:
-                            self.cur.execute(
-                                "SELECT transcript_id FROM exon WHERE chrom=? AND start <= ? AND end >= ?",
-                                (ref, pos_1based, end_1based),
-                            )
-                            if self.cur.fetchone():
-                                pos = full_seq.find(search_seq, pos + 1)
-                                continue
-
-                        if snp_exclusion:
-                            self.cur.execute(
-                                "SELECT COUNT(*) FROM snp WHERE chrom=? AND pos BETWEEN ? AND ?",
-                                (ref, pos_1based, end_1based),
-                            )
-                            if self.cur.fetchone()[0] > 0:
-                                pos = full_seq.find(search_seq, pos + 1)
-                                continue
-
-                        # 3' 말단 미스매치 정밀 검사
-                        off_target = full_seq[pos : pos + len(p_seq)]
-                        mm = needleman_wunsch_mismatch(p_seq[-10:], off_target[-10:])
+                for p_seq in list(primer_pool.keys()):
+                    for search_seq in [p_seq, reverse_complement(p_seq)]:
+                        pos = chunk_seq.find(search_seq)
                         
-                        if mm < mismatch_cutoff:
-                            # 치명적 Off-target 발견 시 즉시 탈락
-                            del primer_pool[p_seq]
-                            break 
+                        while pos != -1:
+                            # 로컬 chunk 안에서의 pos를 게놈 절대 좌표(1-based)로 변환
+                            pos_1based = start_idx + pos + 1
+                            end_1based = start_idx + pos + len(search_seq)
+
+                            if ref == target_chrom and target_start <= pos_1based <= target_end:
+                                pos = chunk_seq.find(search_seq, pos + 1)
+                                continue
+
+                            if splice_variant_handling:
+                                self.cur.execute(
+                                    "SELECT transcript_id FROM exon WHERE chrom=? AND start <= ? AND end >= ?",
+                                    (ref, pos_1based, end_1based),
+                                )
+                                if self.cur.fetchone():
+                                    pos = chunk_seq.find(search_seq, pos + 1)
+                                    continue
+
+                            if snp_exclusion:
+                                self.cur.execute(
+                                    "SELECT COUNT(*) FROM snp WHERE chrom=? AND pos BETWEEN ? AND ?",
+                                    (ref, pos_1based, end_1based),
+                                )
+                                if self.cur.fetchone()[0] > 0:
+                                    pos = chunk_seq.find(search_seq, pos + 1)
+                                    continue
+
+                            # 3' 말단 미스매치 정밀 검사
+                            off_target = chunk_seq[pos : pos + len(p_seq)]
+                            mm = needleman_wunsch_mismatch(p_seq[-10:], off_target[-10:])
                             
-                        hit_counts[p_seq] += 1
-                        if hit_counts[p_seq] > max_hits:
-                            del primer_pool[p_seq]
-                            break
+                            if mm < mismatch_cutoff:
+                                del primer_pool[p_seq]
+                                break 
+                                
+                            hit_counts[p_seq] += 1
+                            if hit_counts[p_seq] > max_hits:
+                                del primer_pool[p_seq]
+                                break
 
-                        pos = full_seq.find(search_seq, pos + 1)
+                            pos = chunk_seq.find(search_seq, pos + 1)
 
-                    # 현재 프라이머가 탈락했다면, Reverse Complement 검사 등 내부 루프 완전히 중단
                     if p_seq not in primer_pool:
                         break
 
-        # 안전성이 검증된 프라이머들만 반환
         return list(primer_pool.values())
 
     def pair_primers(

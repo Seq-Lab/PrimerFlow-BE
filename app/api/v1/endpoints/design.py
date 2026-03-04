@@ -212,6 +212,15 @@ async def design(request: PrimerDesignRequest) -> PrimerDesignResponse:
         if template_info:
             candidates = _filter_candidates_by_template(designer, request, candidates, template_info)
 
+        # [추가] 품질 점수(Penalty) 기준 상위 50개 필터링
+        opt_tm = request.basic.primerTm.opt
+        for cand in candidates:
+            # 페널티 = |Tm오차| + |말단안정성오차|
+            cand["penalty"] = abs(cand.get("tm", 0) - opt_tm) + abs(cand.get("dg3", 0) + 8.0)
+        
+        candidates.sort(key=lambda x: x["penalty"])
+        candidates = candidates[:50] # 최정예 50개만 선정
+
         return _build_response(request, template_info, candidates, started)
     except HTTPException:
         raise
